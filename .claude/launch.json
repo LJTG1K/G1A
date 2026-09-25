@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "g1a-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "g1a-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    { "name": "g1a-prod", "runtimeExecutable": "npm", "runtimeArgs": ["run", "start", "--", "-p", "3100"], "port": 3100 }
   ]
 }

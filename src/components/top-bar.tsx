@@ -12,7 +12,7 @@ export async function TopBar() {
   const admin = await isAdmin(supabase, (data?.claims?.sub as string | undefined) ?? null);
 
   return (
-    <header className="glass sticky top-0 z-40 border-b border-hairline">
+    <header className="glass sticky top-0 z-40 border-b border-hairline pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
         <Link href="/" className="text-lg font-semibold tracking-tight">
           G1A

@@ -166,7 +166,7 @@ export function PinsProvider({
         onClose={() => setPicking(null)}
         onSaved={(ids) => ids[0] && writeLast(ids[ids.length - 1])}
       />
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] z-[60] flex justify-center px-4">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/server";
 import { SheetError, fetchTabs } from "@/server/sheets/fetch-sheet";
+import { allow, LIMITS, tooMany } from "@/server/rate-limit";
 import { parseSheetUrl } from "@/server/sheets/parse-sheet-url";
 import { fromColumns, getGrid, loadCategorizer, syncListings } from "@/server/sheets/sync";
 import type { Grid, Mapping, Tab } from "@/server/sheets/types";
@@ -38,6 +39,7 @@ export async function inspectSheet(url: string): Promise<InspectResult> {
   const { id: userId, supabase } = await requireUser();
   const parsed = parseSheetUrl(url);
   if (!parsed) return { ok: false, error: "That doesn't look like a Google Sheets link." };
+  if (!(await allow(supabase, LIMITS.sheetRead))) return tooMany(LIMITS.sheetRead.minutes);
   try {
     const { title, tabs } = await fetchTabs(parsed.sheetId);
     const { data: mine } = await supabase
@@ -69,6 +71,7 @@ export type PreviewResult = Result<{
 /** Step 2: fetch one tab and suggest a mapping (shared preset, else auto-guess). */
 export async function previewTab(sheetId: string, tab: Tab, sheetTitle: string | null): Promise<PreviewResult> {
   const { id: userId, supabase } = await requireUser();
+  if (!(await allow(supabase, LIMITS.sheetRead))) return tooMany(LIMITS.sheetRead.minutes);
   try {
     const admin = createAdminClient();
     const source = await ensureSource(admin, { sheetId, gid: tab.gid, tabName: tab.name, sheetTitle });
@@ -160,6 +163,7 @@ export async function refreshTab(sourceId: string): Promise<Result<{ count: numb
       .maybeSingle();
     const m = link?.mappings as unknown as { header_row: number; columns: Parameters<typeof fromColumns>[1] } | null;
     if (!m) return { ok: false, error: "This sheet isn't in your list." };
+    if (!(await allow(supabase, LIMITS.refresh))) return tooMany(LIMITS.refresh.minutes);
 
     const admin = createAdminClient();
     const { data: source } = await admin.from("sources").select("id, sheet_id, gid").eq("id", sourceId).single();

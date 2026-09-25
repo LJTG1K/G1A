@@ -35,6 +35,16 @@ export const ProductCard = memo(function ProductCard({
       whileTap={{ scale: 0.98 }}
       transition={{ ...spring.soft, delay }}
       onClick={() => onOpen(product)}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(product);
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`${product.name}, ${formatPrice(product.priceCents, product.priceRaw)}`}
       // Off-screen cards skip layout/paint until scrolled near.
       style={{ contentVisibility: "auto", containIntrinsicSize: "auto 340px" }}
       className={`bubble group cursor-pointer overflow-hidden p-3 ${muted ? "opacity-60 grayscale" : ""}`}
