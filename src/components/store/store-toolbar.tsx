@@ -20,6 +20,7 @@ export function StoreToolbar({
   total,
   loading,
   status,
+  scopedToSheet = false,
 }: {
   query: StoreQuery;
   onChange: (q: StoreQuery) => void;
@@ -27,6 +28,7 @@ export function StoreToolbar({
   total: number;
   loading: boolean;
   status: "idle" | "checking" | "updated";
+  scopedToSheet?: boolean;
 }) {
   // Search is debounced so typing doesn't fire a query per keystroke.
   const [text, setText] = useState(query.q);
@@ -70,6 +72,7 @@ export function StoreToolbar({
             onChange={(v) => set({ sort: v as Sort })}
             options={SORTS.map((s) => ({ value: s.id, label: s.label }))}
           />
+          {!scopedToSheet && (
           <Select
             label="Sheet"
             value={query.sheet ?? ""}
@@ -79,6 +82,7 @@ export function StoreToolbar({
               ...facets.sheets.map((s) => ({ value: s.id, label: `${s.label} (${s.count.toLocaleString()})` })),
             ]}
           />
+          )}
           <Select
             label="Price"
             value={query.price ?? ""}
@@ -87,6 +91,20 @@ export function StoreToolbar({
           />
         </div>
       </div>
+
+      {scopedToSheet && facets.sheets.length > 1 && (
+        // One spreadsheet: its tabs as chips.
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+          <Chip group="tab" active={!query.sheet} onClick={() => set({ sheet: null })}>
+            All tabs
+          </Chip>
+          {facets.sheets.map((t) => (
+            <Chip key={t.id} group="tab" active={query.sheet === t.id} onClick={() => set({ sheet: query.sheet === t.id ? null : t.id })}>
+              {t.tab} <span className="opacity-60">{t.count.toLocaleString()}</span>
+            </Chip>
+          ))}
+        </div>
+      )}
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
         <Chip group="category" active={!query.category} onClick={() => set({ category: null })}>
@@ -123,7 +141,7 @@ export function StoreToolbar({
             type="button"
             onClick={() => {
               setText("");
-              onChange({ ...EMPTY_QUERY, sort: query.sort });
+              onChange({ ...EMPTY_QUERY, spreadsheet: query.spreadsheet, sort: query.sort });
             }}
             className="font-medium text-accent hover:underline"
           >

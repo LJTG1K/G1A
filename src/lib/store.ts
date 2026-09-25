@@ -29,7 +29,7 @@ export type Product = {
 export type Facets = {
   total: number;
   categories: { category: string | null; count: number }[];
-  sheets: { id: string; label: string; count: number; featured: boolean }[];
+  sheets: { id: string; label: string; tab: string; count: number; featured: boolean }[];
 };
 
 export const SORTS = [
@@ -54,16 +54,19 @@ export const PAGE_SIZE = 60;
 export type StoreQuery = {
   q: string;
   category: string | null;
+  /** Only this spreadsheet (Google sheet id), e.g. from a homepage shelf. */
+  spreadsheet: string | null;
+  /** Only this tab (source id). */
   sheet: string | null;
   price: string | null;
   sort: Sort;
 };
 
-export const EMPTY_QUERY: StoreQuery = { q: "", category: null, sheet: null, price: null, sort: "sheet" };
+export const EMPTY_QUERY: StoreQuery = { q: "", category: null, spreadsheet: null, sheet: null, price: null, sort: "sheet" };
 
 type Params = Record<string, string | string[] | undefined> | URLSearchParams;
 
-/** Reads a store query from the URL (?q=&cat=&sheet=&price=&sort=). */
+/** Reads a store query from the URL (?q=&cat=&ss=&sheet=&price=&sort=). */
 export function parseStoreQuery(params: Params): StoreQuery {
   const get = (k: string) => {
     const v = params instanceof URLSearchParams ? params.get(k) : params[k];
@@ -74,6 +77,7 @@ export function parseStoreQuery(params: Params): StoreQuery {
   return {
     q: (get("q") ?? "").slice(0, 100),
     category: get("cat")?.slice(0, 40) ?? null,
+    spreadsheet: get("ss"),
     sheet: get("sheet"),
     price: PRICE_BUCKETS.some((b) => b.id === price) ? price : null,
     sort: SORTS.some((s) => s.id === sort) ? (sort as Sort) : "sheet",
@@ -84,6 +88,7 @@ export function storeQueryString(q: StoreQuery): string {
   const p = new URLSearchParams();
   if (q.q) p.set("q", q.q);
   if (q.category) p.set("cat", q.category);
+  if (q.spreadsheet) p.set("ss", q.spreadsheet);
   if (q.sheet) p.set("sheet", q.sheet);
   if (q.price) p.set("price", q.price);
   if (q.sort !== "sheet") p.set("sort", q.sort);

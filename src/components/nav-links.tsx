@@ -7,7 +7,8 @@ import { usePins } from "@/components/pins/pins-provider";
 import { spring } from "@/components/ui/motion";
 
 const links = [
-  { href: "/", label: "Store", auth: false },
+  { href: "/", label: "Home", auth: false },
+  { href: "/store", label: "All products", auth: false },
   { href: "/sources", label: "Sheets", auth: true },
   { href: "/boards", label: "Boards", auth: true },
   { href: "/admin", label: "Admin", auth: true, admin: true },

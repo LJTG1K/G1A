@@ -14,15 +14,14 @@ import {
   type Product,
   type StoreQuery,
 } from "@/lib/store";
-import { loadProducts, refreshStore, setProductCategory } from "@/app/store-actions";
+import { loadProducts, setProductCategory } from "@/app/store-actions";
+import { useSheetRefresh } from "./use-sheet-refresh";
 import { CategoryPicker } from "./category-picker";
 import { usePins } from "@/components/pins/pins-provider";
 import { ProductCard } from "./product-card";
 import { ProductDetail } from "./product-detail";
 import { StoreToolbar } from "./store-toolbar";
 
-const REFRESH_KEY = "g1a-store-checked";
-const REFRESH_EVERY_MS = 10 * 60 * 1000;
 
 export function Storefront({
   initialQuery,
@@ -31,6 +30,7 @@ export function Storefront({
   facets,
   categories,
   demo,
+  scopedToSheet = false,
 }: {
   initialQuery: StoreQuery;
   initialProducts: Product[];
@@ -38,6 +38,8 @@ export function Storefront({
   facets: Facets;
   categories: string[];
   demo: boolean;
+  /** Store limited to one spreadsheet: its tabs become filter chips. */
+  scopedToSheet?: boolean;
 }) {
   const router = useRouter();
   const pins = usePins();
@@ -48,7 +50,6 @@ export function Storefront({
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState<Product | null>(null);
   const [recategorizing, setRecategorizing] = useState<Product | null>(null);
-  const [status, setStatus] = useState<"idle" | "checking" | "updated">("idle");
   const requestId = useRef(0);
   const firstPage = useRef(PAGE_SIZE);
 
@@ -109,29 +110,11 @@ export function Storefront({
     return () => io.disconnect();
   }, [loadMore]);
 
-  // On open, check sheets for updates (at most every 10 minutes per tab session).
-  useEffect(() => {
-    let last = 0;
-    try {
-      last = Number(sessionStorage.getItem(REFRESH_KEY)) || 0;
-    } catch {}
-    if (Date.now() - last < REFRESH_EVERY_MS) return;
-    // Start after first paint so the store shows immediately.
-    const start = setTimeout(async () => {
-      setStatus("checking");
-      const changed = await refreshStore(demo);
-      try {
-        sessionStorage.setItem(REFRESH_KEY, String(Date.now()));
-      } catch {}
-      if (!changed) return setStatus("idle");
-      setStatus("updated");
-      void runQuery(query);
-      router.refresh();
-      setTimeout(() => setStatus("idle"), 2500);
-    }, 300);
-    return () => clearTimeout(start);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // On open, re-read stale sheets and reload if anything changed.
+  const status = useSheetRefresh(demo, () => {
+    void runQuery(query);
+    router.refresh();
+  });
 
 
   const filtered =
@@ -146,6 +129,7 @@ export function Storefront({
         total={total}
         loading={loading}
         status={status}
+        scopedToSheet={scopedToSheet}
       />
 
       {demo && (
@@ -228,7 +212,7 @@ export function Storefront({
             {filtered ? (
               <button
                 type="button"
-                onClick={() => setQuery({ ...EMPTY_QUERY, sort: query.sort })}
+                onClick={() => setQuery({ ...EMPTY_QUERY, spreadsheet: query.spreadsheet, sort: query.sort })}
                 className="mt-4 rounded-full px-4 py-2 text-sm font-medium text-accent hover:bg-hairline"
               >
                 Clear filters

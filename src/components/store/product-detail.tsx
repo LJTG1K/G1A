@@ -15,6 +15,7 @@ export function ProductDetail({
   onChangeCategory,
   onClose,
   changes,
+  layoutScope = "",
 }: {
   product: Product | null;
   pinned: boolean;
@@ -24,6 +25,8 @@ export function ProductDetail({
   onClose: () => void;
   /** Shown on board pages: what changed since the product was pinned. */
   changes?: React.ReactNode;
+  /** Must match the card it opened from, so the image morphs from the right place. */
+  layoutScope?: string;
 }) {
   const listings = product?.listings ?? [];
   const sheets = new Set(listings.map((l) => l.sourceId)).size;
@@ -36,7 +39,7 @@ export function ProductDetail({
       {product && (
         <div className="grid gap-6 p-4 sm:grid-cols-2 sm:p-6">
           <motion.div
-            layoutId={`img-${product.key}`}
+            layoutId={`${layoutScope}img-${product.key}`}
             className="aspect-square overflow-hidden rounded-[22px] bg-surface-2"
           >
             {product.image && (
@@ -52,7 +55,7 @@ export function ProductDetail({
 
           <motion.div variants={staggerGrid} initial="hidden" animate="show" className="flex min-w-0 flex-col">
             <div className="flex items-start justify-between gap-3">
-              <motion.h2 layoutId={`name-${product.key}`} className="text-2xl font-semibold tracking-tight">
+              <motion.h2 layoutId={`${layoutScope}name-${product.key}`} className="text-2xl font-semibold tracking-tight">
                 {product.name}
               </motion.h2>
               <PinButton pinned={pinned} onToggle={onPin} size="lg" />

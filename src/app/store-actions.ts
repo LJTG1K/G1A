@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { PAGE_SIZE, type Product, type StoreQuery } from "@/lib/store";
 import { keywordCategories, OTHER_TAG, recountTag } from "@/server/categories";
-import { getStoreSources, queryProducts, refreshStale } from "@/server/store";
+import { getStoreSources, queryProducts, refreshStale, scopeSources } from "@/server/store";
 
 /** Signed-in user id, or null for the logged-out demo store. */
 async function viewer(demo: boolean) {
@@ -23,7 +23,7 @@ export async function loadProducts(
   keys?: string[],
 ): Promise<{ products: Product[]; total: number }> {
   const { supabase, userId } = await viewer(demo);
-  const sources = await getStoreSources(supabase, userId);
+  const sources = scopeSources(await getStoreSources(supabase, userId), query.spreadsheet);
   return queryProducts(supabase, sources, query, Math.max(0, offset), PAGE_SIZE, keys?.slice(0, PAGE_SIZE));
 }
 

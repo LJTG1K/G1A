@@ -15,6 +15,7 @@ export const ProductCard = memo(function ProductCard({
   delay = 0,
   overlay,
   muted = false,
+  layoutScope = "",
 }: {
   product: Product;
   pinned: boolean;
@@ -25,6 +26,8 @@ export const ProductCard = memo(function ProductCard({
   overlay?: React.ReactNode;
   /** Greyed out, e.g. no longer listed. */
   muted?: boolean;
+  /** Prefix for shared-layout ids when the same product appears in several lists (home shelves). */
+  layoutScope?: string;
 }) {
   const sheets = new Set(product.listings.map((l) => l.sourceId)).size;
   return (
@@ -51,7 +54,7 @@ export const ProductCard = memo(function ProductCard({
     >
       <div className="relative">
         <motion.div
-          layoutId={`img-${product.key}`}
+          layoutId={`${layoutScope}img-${product.key}`}
           className="aspect-square overflow-hidden rounded-[20px] bg-surface-2"
         >
           {product.image && (
@@ -72,7 +75,7 @@ export const ProductCard = memo(function ProductCard({
         </div>
       </div>
       <div className="px-1 pt-3 pb-1">
-        <motion.h3 layoutId={`name-${product.key}`} className="line-clamp-2 text-[15px] leading-snug font-medium">
+        <motion.h3 layoutId={`${layoutScope}name-${product.key}`} className="line-clamp-2 text-[15px] leading-snug font-medium">
           {product.name}
         </motion.h3>
         <div className="mt-1.5 flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">

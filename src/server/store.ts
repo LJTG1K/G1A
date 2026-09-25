@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Facets, Product, StoreQuery } from "@/lib/store";
-import { PRICE_BUCKETS } from "@/lib/store";
+import { EMPTY_QUERY, PRICE_BUCKETS } from "@/lib/store";
 import { fromColumns, getGrid, loadCategorizer, syncListings, SNAPSHOT_TTL_MS } from "./sheets/sync";
 import type { Mapping } from "./sheets/types";
 
@@ -12,6 +12,7 @@ export type StoreSource = {
   signature: string;
   mapping: Mapping;
   label: string;
+  sheetTitle: string;
   tab: string;
   featured: boolean;
   fetchedAt: string | null;
@@ -73,6 +74,7 @@ function toSource(s: SourceJoin, m: MappingJoin, featured: boolean): StoreSource
     signature: m.signature,
     mapping: fromColumns(m.header_row, m.columns),
     label: label(s),
+    sheetTitle: s.sheet_title ?? "Google Sheet",
     tab: s.tab_name,
     featured,
     fetchedAt: null,
@@ -176,7 +178,7 @@ export async function queryFacets(db: SupabaseClient, sources: StoreSource[]): P
   return {
     total: f.total,
     categories: f.categories.map((c) => ({ category: c.category, count: c.count })),
-    sheets: sources.map((s) => ({ id: s.id, label: s.label, count: counts.get(s.id) ?? 0, featured: s.featured })),
+    sheets: sources.map((s) => ({ id: s.id, label: s.label, tab: s.tab, count: counts.get(s.id) ?? 0, featured: s.featured })),
   };
 }
 
@@ -207,4 +209,39 @@ export async function refreshStale(admin: SupabaseClient, sources: StoreSource[]
     }
   }
   return changed;
+}
+
+/** Narrows the store to one spreadsheet when the query asks for it (unknown ids are ignored). */
+export function scopeSources(sources: StoreSource[], spreadsheet: string | null): StoreSource[] {
+  if (!spreadsheet) return sources;
+  const scoped = sources.filter((s) => s.sheetId === spreadsheet);
+  return scoped.length ? scoped : sources;
+}
+
+export type Shelf = {
+  sheetId: string;
+  title: string;
+  featured: boolean;
+  tabs: { id: string; name: string }[];
+  total: number;
+  products: Product[];
+};
+
+/** One shelf per spreadsheet: its tabs, product count and first products. */
+export async function getShelves(db: SupabaseClient, sources: StoreSource[], perShelf: number): Promise<Shelf[]> {
+  const groups = new Map<string, StoreSource[]>();
+  for (const s of sources) groups.set(s.sheetId, [...(groups.get(s.sheetId) ?? []), s]);
+  return Promise.all(
+    [...groups].map(async ([sheetId, group]) => {
+      const { products, total } = await queryProducts(db, group, EMPTY_QUERY, 0, perShelf);
+      return {
+        sheetId,
+        title: group[0].sheetTitle,
+        featured: group.every((s) => s.featured),
+        tabs: group.map((s) => ({ id: s.id, name: s.tab })),
+        total,
+        products,
+      };
+    }),
+  );
 }
