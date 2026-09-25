@@ -23,7 +23,7 @@ export async function TopBar() {
               <button
                 type="submit"
                 title={email}
-                className="rounded-full px-3 py-1.5 text-sm text-muted transition-colors hover:bg-hairline hover:text-text"
+                className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-muted transition-colors hover:bg-hairline hover:text-text"
               >
                 Sign out
               </button>
