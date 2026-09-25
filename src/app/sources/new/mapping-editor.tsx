@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { spring } from "@/components/ui/motion";
-import { formatPrice } from "@/lib/types";
+import { formatPrice } from "@/lib/store";
 import { cellImage, cellUrl } from "@/server/sheets/auto-map";
 import { parsePrice } from "@/server/sheets/price";
 import type { Cell, Grid, Mapping } from "@/server/sheets/types";

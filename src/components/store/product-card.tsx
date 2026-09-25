@@ -1,30 +1,36 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "motion/react";
-import { riseIn, spring } from "@/components/ui/motion";
-import { formatPrice, type Product } from "@/lib/types";
+import { spring } from "@/components/ui/motion";
+import { formatPrice, type Product } from "@/lib/store";
 import { PinButton } from "./pin-button";
 
 /** Compact grid card: core fields + source badge only. */
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   pinned,
   onPin,
   onOpen,
+  delay = 0,
 }: {
   product: Product;
   pinned: boolean;
-  onPin: () => void;
-  onOpen: () => void;
+  onPin: (p: Product) => void;
+  onOpen: (p: Product) => void;
+  delay?: number;
 }) {
-  const sheets = product.listings.length;
+  const sheets = new Set(product.listings.map((l) => l.sourceId)).size;
   return (
     <motion.article
-      variants={riseIn}
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       whileHover={{ y: -6, boxShadow: "var(--shadow-lift)" }}
       whileTap={{ scale: 0.98 }}
-      transition={spring.soft}
-      onClick={onOpen}
+      transition={{ ...spring.soft, delay }}
+      onClick={() => onOpen(product)}
+      // Off-screen cards skip layout/paint until scrolled near.
+      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 340px" }}
       className="bubble group cursor-pointer overflow-hidden p-3"
     >
       <div className="relative">
@@ -33,17 +39,19 @@ export function ProductCard({
           className="aspect-square overflow-hidden rounded-[20px] bg-surface-2"
         >
           {product.image && (
-            // eslint-disable-next-line @next/next/no-img-element -- arbitrary sheet hosts; proxied in M2
+            // eslint-disable-next-line @next/next/no-img-element -- arbitrary sheet image hosts
             <img
               src={product.image}
               alt=""
               loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           )}
         </motion.div>
         <div className="absolute top-2 right-2">
-          <PinButton pinned={pinned} onToggle={onPin} />
+          <PinButton pinned={pinned} onToggle={() => onPin(product)} />
         </div>
       </div>
       <div className="px-1 pt-3 pb-1">
@@ -56,10 +64,10 @@ export function ProductCard({
             {formatPrice(product.priceCents, product.priceRaw)}
           </span>
           <span className="max-w-full truncate rounded-full bg-surface-2 px-2.5 py-1 text-[11px] text-muted">
-            {sheets > 1 ? `${sheets} sheets` : product.listings[0]?.sheet}
+            {sheets > 1 ? `${sheets} sheets` : product.listings[0]?.tab}
           </span>
         </div>
       </div>
     </motion.article>
   );
-}
+});

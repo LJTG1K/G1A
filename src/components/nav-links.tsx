@@ -23,7 +23,7 @@ export function NavLinks({ signedIn }: { signedIn: boolean }) {
             <Link
               key={l.href}
               href={l.href}
-              className={`relative rounded-full px-3 py-1.5 text-sm transition-colors ${
+              className={`relative rounded-full px-2.5 py-1.5 text-sm transition-colors sm:px-3 ${
                 active ? "text-text" : "text-muted hover:text-text"
               }`}
             >
