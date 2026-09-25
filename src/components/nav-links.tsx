@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
+import { usePins } from "@/components/pins/pins-provider";
 import { spring } from "@/components/ui/motion";
 
 const links = [
@@ -13,6 +14,7 @@ const links = [
 
 export function NavLinks({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
+  const { pinCount } = usePins();
   return (
     <nav className="flex items-center gap-1">
       {links
@@ -35,6 +37,18 @@ export function NavLinks({ signedIn }: { signedIn: boolean }) {
                 />
               )}
               <span className="relative">{l.label}</span>
+              {l.href === "/boards" && pinCount > 0 && (
+                // Re-keyed on count so it bounces each time a pin is added or removed.
+                <motion.span
+                  key={pinCount}
+                  initial={{ scale: 0.4 }}
+                  animate={{ scale: 1 }}
+                  transition={spring.bouncy}
+                  className="relative ml-1.5 inline-grid min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[11px] font-semibold leading-5 text-accent-contrast"
+                >
+                  {pinCount}
+                </motion.span>
+              )}
             </Link>
           );
         })}

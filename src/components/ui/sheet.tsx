@@ -10,11 +10,13 @@ export function Sheet({
   onClose,
   children,
   label,
+  size = "lg",
 }: {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
   label: string;
+  size?: "sm" | "lg";
 }) {
   useEffect(() => {
     if (!open) return;
@@ -47,7 +49,7 @@ export function Sheet({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={spring.soft}
-            className="bubble relative max-h-[92dvh] w-full overflow-y-auto rounded-b-none sm:max-w-3xl sm:rounded-b-[28px]"
+            className={`bubble relative max-h-[92dvh] w-full overflow-y-auto rounded-b-none sm:rounded-b-[28px] ${size === "sm" ? "sm:max-w-sm" : "sm:max-w-3xl"}`}
           >
             {children}
           </motion.div>

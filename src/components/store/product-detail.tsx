@@ -11,12 +11,17 @@ export function ProductDetail({
   product,
   pinned,
   onPin,
+  onChooseBoards,
   onClose,
+  changes,
 }: {
   product: Product | null;
   pinned: boolean;
   onPin: () => void;
+  onChooseBoards?: () => void;
   onClose: () => void;
+  /** Shown on board pages: what changed since the product was pinned. */
+  changes?: React.ReactNode;
 }) {
   const listings = product?.listings ?? [];
   const sheets = new Set(listings.map((l) => l.sourceId)).size;
@@ -50,6 +55,16 @@ export function ProductDetail({
               </motion.h2>
               <PinButton pinned={pinned} onToggle={onPin} size="lg" />
             </div>
+            {onChooseBoards && (
+              <button
+                type="button"
+                onClick={onChooseBoards}
+                className="mt-1 self-start text-sm font-medium text-accent hover:underline"
+              >
+                {pinned ? "Change boards" : "Save to a board…"}
+              </button>
+            )}
+            {changes}
             <motion.div variants={riseIn} className="mt-2 flex items-baseline gap-3">
               <span className="text-2xl font-semibold">{formatPrice(product.priceCents, product.priceRaw)}</span>
               {product.category && <span className="text-sm text-muted">{product.category}</span>}

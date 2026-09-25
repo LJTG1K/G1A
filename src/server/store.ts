@@ -108,6 +108,7 @@ export async function queryProducts(
   q: StoreQuery,
   offset: number,
   limit: number,
+  keys?: string[],
 ): Promise<{ products: Product[]; total: number }> {
   if (!sources.length) return { products: [], total: 0 };
   const bucket = PRICE_BUCKETS.find((b) => b.id === q.price);
@@ -129,6 +130,7 @@ export async function queryProducts(
     p_sort: q.sort,
     p_offset: offset,
     p_limit: limit,
+    p_keys: keys ?? null,
   });
   if (error) throw new Error(`Store query failed: ${error.message}`);
 

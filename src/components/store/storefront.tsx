@@ -15,6 +15,7 @@ import {
   type StoreQuery,
 } from "@/lib/store";
 import { loadProducts, refreshStore } from "@/app/store-actions";
+import { usePins } from "@/components/pins/pins-provider";
 import { ProductCard } from "./product-card";
 import { ProductDetail } from "./product-detail";
 import { StoreToolbar } from "./store-toolbar";
@@ -36,6 +37,7 @@ export function Storefront({
   demo: boolean;
 }) {
   const router = useRouter();
+  const pins = usePins();
   const [query, setQuery] = useState(initialQuery);
   const [products, setProducts] = useState(initialProducts);
   const [total, setTotal] = useState(initialTotal);
@@ -43,8 +45,6 @@ export function Storefront({
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState<Product | null>(null);
   const [status, setStatus] = useState<"idle" | "checking" | "updated">("idle");
-  // Local-only pins until boards arrive in M5.
-  const [pins, setPins] = useState<Set<string>>(new Set());
   const requestId = useRef(0);
   const firstPage = useRef(PAGE_SIZE);
 
@@ -129,16 +129,6 @@ export function Storefront({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const togglePin = useCallback(
-    (p: Product) =>
-      setPins((prev) => {
-        const next = new Set(prev);
-        if (next.has(p.key)) next.delete(p.key);
-        else next.add(p.key);
-        return next;
-      }),
-    [],
-  );
 
   const filtered =
     !!query.q || !!query.category || !!query.sheet || !!query.price;
@@ -176,8 +166,8 @@ export function Storefront({
             <ProductCard
               key={p.key}
               product={p}
-              pinned={pins.has(p.key)}
-              onPin={togglePin}
+              pinned={pins.isPinned(p.key)}
+              onPin={pins.toggle}
               onOpen={setOpen}
               // Stagger only within each page so later pages don't wait.
               delay={Math.min((i % PAGE_SIZE) * 0.02, 0.4)}
@@ -188,8 +178,9 @@ export function Storefront({
 
         <ProductDetail
           product={open}
-          pinned={!!open && pins.has(open.key)}
-          onPin={() => open && togglePin(open)}
+          pinned={!!open && pins.isPinned(open.key)}
+          onPin={() => open && pins.toggle(open)}
+          onChooseBoards={() => open && pins.choose(open)}
           onClose={() => setOpen(null)}
         />
       </LayoutGroup>

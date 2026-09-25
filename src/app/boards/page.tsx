@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
+import { getBoardSummaries } from "@/server/pins";
+import { BoardsIndex } from "./boards-index";
 
 export const metadata: Metadata = { title: "Boards" };
 
-export default async function Page() {
-  await requireUser();
+export default async function BoardsPage() {
+  const { id: userId, supabase } = await requireUser();
+  const boards = await getBoardSummaries(supabase, userId);
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-10 sm:px-6">
-      <h1 className="text-4xl font-semibold tracking-tight">Boards</h1>
-      <p className="mt-3 text-muted">Your private pin boards. Arrive in Milestone 5.</p>
+    <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-10 pb-24 sm:px-6">
+      <BoardsIndex boards={boards} />
     </main>
   );
 }

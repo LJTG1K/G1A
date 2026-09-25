@@ -3,12 +3,13 @@
 import { motion, type HTMLMotionProps } from "motion/react";
 import { spring } from "./motion";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const styles: Record<Variant, string> = {
   primary: "bg-accent text-accent-contrast hover:brightness-110",
   secondary: "bg-surface-2 text-text border border-hairline hover:bg-hairline",
   ghost: "text-accent hover:bg-hairline",
+  danger: "bg-danger text-white hover:brightness-110",
 };
 
 export function Button({

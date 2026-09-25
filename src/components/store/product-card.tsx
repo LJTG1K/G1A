@@ -13,12 +13,18 @@ export const ProductCard = memo(function ProductCard({
   onPin,
   onOpen,
   delay = 0,
+  overlay,
+  muted = false,
 }: {
   product: Product;
   pinned: boolean;
   onPin: (p: Product) => void;
   onOpen: (p: Product) => void;
   delay?: number;
+  /** Extra badges over the image (e.g. pin changes on board pages). */
+  overlay?: React.ReactNode;
+  /** Greyed out, e.g. no longer listed. */
+  muted?: boolean;
 }) {
   const sheets = new Set(product.listings.map((l) => l.sourceId)).size;
   return (
@@ -31,7 +37,7 @@ export const ProductCard = memo(function ProductCard({
       onClick={() => onOpen(product)}
       // Off-screen cards skip layout/paint until scrolled near.
       style={{ contentVisibility: "auto", containIntrinsicSize: "auto 340px" }}
-      className="bubble group cursor-pointer overflow-hidden p-3"
+      className={`bubble group cursor-pointer overflow-hidden p-3 ${muted ? "opacity-60 grayscale" : ""}`}
     >
       <div className="relative">
         <motion.div
@@ -50,6 +56,7 @@ export const ProductCard = memo(function ProductCard({
             />
           )}
         </motion.div>
+        {overlay && <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">{overlay}</div>}
         <div className="absolute top-2 right-2">
           <PinButton pinned={pinned} onToggle={() => onPin(product)} />
         </div>

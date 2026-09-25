@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { riseIn, spring, staggerGrid } from "@/components/ui/motion";
@@ -47,6 +47,17 @@ export function SourceList({ items }: { items: SourceItem[] }) {
 }
 
 function SourceRow({ item }: { item: SourceItem }) {
+  // Relative time depends on the clock, so it is filled in after hydration.
+  const [updated, setUpdated] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () => setUpdated(ago(item.fetchedAt));
+    const first = setTimeout(tick, 0);
+    const every = setInterval(tick, 60_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(every);
+    };
+  }, [item.fetchedAt]);
   const [pending, start] = useTransition();
   const [busy, setBusy] = useState<"refresh" | "remove" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -84,7 +95,8 @@ function SourceRow({ item }: { item: SourceItem }) {
           )}
         </div>
         <p className="truncate text-sm text-muted">
-          {item.sheetTitle ?? "Google Sheet"} · {item.products.toLocaleString()} products · {ago(item.fetchedAt)}
+          {item.sheetTitle ?? "Google Sheet"} · {item.products.toLocaleString()} products
+          {updated && ` · ${updated}`}
         </p>
         <AnimatePresence>
           {message && (

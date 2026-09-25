@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { PinsProvider } from "@/components/pins/pins-provider";
 import { TopBar } from "@/components/top-bar";
+import { createClient } from "@/lib/supabase/server";
+import { getPinState } from "@/server/pins";
+import { InlineScript } from "@/components/ui/inline-script";
 import { themeScript } from "@/components/ui/theme-toggle";
 import "./globals.css";
 
@@ -18,15 +22,22 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = (data?.claims?.sub as string | undefined) ?? null;
+  const pins = await getPinState(supabase, userId);
+
   return (
     <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <InlineScript html={themeScript} />
       </head>
       <body className="flex min-h-full flex-col">
-        <TopBar />
-        {children}
+        <PinsProvider signedIn={!!userId} initialBoards={pins.boards} initialPins={pins.pins}>
+          <TopBar />
+          {children}
+        </PinsProvider>
       </body>
     </html>
   );
