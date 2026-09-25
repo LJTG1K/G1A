@@ -33,7 +33,8 @@ export function Sheet({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+        // Small pickers open from inside bigger sheets, so they stack above them.
+        <div className={`fixed inset-0 flex items-end justify-center sm:items-center sm:p-6 ${size === "sm" ? "z-[55]" : "z-50"}`}>
           <motion.div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             initial={{ opacity: 0 }}

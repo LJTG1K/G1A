@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PAGE_SIZE, parseStoreQuery } from "@/lib/store";
+import { keywordCategories } from "@/server/categories";
 import { getStoreSources, queryFacets, queryProducts } from "@/server/store";
 import { Storefront } from "./storefront";
 
@@ -18,10 +19,15 @@ export async function StorePage({
 
   const query = parseStoreQuery(searchParams);
   const sources = await getStoreSources(supabase, userId);
-  const [facets, first] = await Promise.all([
+  const [facets, first, keywordCats] = await Promise.all([
     queryFacets(supabase, sources),
     queryProducts(supabase, sources, query, 0, PAGE_SIZE),
+    keywordCategories(supabase),
   ]);
+  // Everything a product can be filed under: keyword categories plus any in use.
+  const categories = [
+    ...new Set([...keywordCats, ...facets.categories.flatMap((c) => (c.category ? [c.category] : []))]),
+  ].sort();
   // Each tab counts as a sheet, matching the "N sheets" badges on cards.
   const sheetCount = sources.length;
 
@@ -42,6 +48,7 @@ export async function StorePage({
         initialProducts={first.products}
         initialTotal={first.total}
         facets={facets}
+        categories={categories}
         demo={demo}
       />
     </main>

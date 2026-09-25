@@ -12,6 +12,7 @@ export function ProductDetail({
   pinned,
   onPin,
   onChooseBoards,
+  onChangeCategory,
   onClose,
   changes,
 }: {
@@ -19,6 +20,7 @@ export function ProductDetail({
   pinned: boolean;
   onPin: () => void;
   onChooseBoards?: () => void;
+  onChangeCategory?: () => void;
   onClose: () => void;
   /** Shown on board pages: what changed since the product was pinned. */
   changes?: React.ReactNode;
@@ -67,7 +69,18 @@ export function ProductDetail({
             {changes}
             <motion.div variants={riseIn} className="mt-2 flex items-baseline gap-3">
               <span className="text-2xl font-semibold">{formatPrice(product.priceCents, product.priceRaw)}</span>
-              {product.category && <span className="text-sm text-muted">{product.category}</span>}
+              {onChangeCategory ? (
+                <button
+                  type="button"
+                  onClick={onChangeCategory}
+                  title="Change category"
+                  className="rounded-full border border-hairline px-2.5 py-0.5 text-sm text-muted transition-colors hover:bg-hairline hover:text-text"
+                >
+                  {product.category ?? "Other"} <span aria-hidden>✎</span>
+                </button>
+              ) : (
+                product.category && <span className="text-sm text-muted">{product.category}</span>
+              )}
             </motion.div>
 
             {product.custom.length > 0 && (

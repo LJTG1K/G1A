@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { spring } from "@/components/ui/motion";
+import { colLetter } from "@/lib/columns";
 import { formatPrice } from "@/lib/store";
 import { cellImage, cellUrl } from "@/server/sheets/auto-map";
 import { parsePrice } from "@/server/sheets/price";
@@ -26,9 +27,6 @@ const ORIGIN: Record<MappingOrigin, { label: string; className: string }> = {
   preset: { label: "Mapped from other users’ setup", className: "bg-success/15 text-success" },
   auto: { label: "Guessed automatically — please check", className: "bg-accent/15 text-accent" },
 };
-
-export const colLetter = (i: number): string =>
-  (i >= 26 ? colLetter(Math.floor(i / 26) - 1) : "") + String.fromCharCode(65 + (i % 26));
 
 export function MappingEditor({
   tabName,

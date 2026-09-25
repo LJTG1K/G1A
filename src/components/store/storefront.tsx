@@ -14,7 +14,8 @@ import {
   type Product,
   type StoreQuery,
 } from "@/lib/store";
-import { loadProducts, refreshStore } from "@/app/store-actions";
+import { loadProducts, refreshStore, setProductCategory } from "@/app/store-actions";
+import { CategoryPicker } from "./category-picker";
 import { usePins } from "@/components/pins/pins-provider";
 import { ProductCard } from "./product-card";
 import { ProductDetail } from "./product-detail";
@@ -28,12 +29,14 @@ export function Storefront({
   initialProducts,
   initialTotal,
   facets,
+  categories,
   demo,
 }: {
   initialQuery: StoreQuery;
   initialProducts: Product[];
   initialTotal: number;
   facets: Facets;
+  categories: string[];
   demo: boolean;
 }) {
   const router = useRouter();
@@ -44,6 +47,7 @@ export function Storefront({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState<Product | null>(null);
+  const [recategorizing, setRecategorizing] = useState<Product | null>(null);
   const [status, setStatus] = useState<"idle" | "checking" | "updated">("idle");
   const requestId = useRef(0);
   const firstPage = useRef(PAGE_SIZE);
@@ -176,11 +180,34 @@ export function Storefront({
           {loadingMore && Array.from({ length: 5 }, (_, i) => <ProductCardSkeleton key={`s${i}`} />)}
         </motion.div>
 
+        <CategoryPicker
+          product={recategorizing}
+          categories={categories}
+          onClose={() => setRecategorizing(null)}
+          onPick={async (category) => {
+            if (!recategorizing) return false;
+            const res = await setProductCategory(recategorizing.key, category);
+            if (!res.ok) {
+              pins.toast({ message: res.error });
+              return false;
+            }
+            // Reload so the resolved category (and chip counts) come from the server.
+            const fresh = await loadProducts(EMPTY_QUERY, 0, demo, [recategorizing.key]).catch(() => null);
+            void runQuery(query);
+            router.refresh();
+            const resolved = fresh?.products[0]?.category ?? null;
+            setOpen((o) => (o && o.key === recategorizing.key ? { ...o, category: resolved } : o));
+            pins.toast({ message: category === null ? `Back to automatic: ${resolved ?? "Other"}` : `Filed under ${resolved ?? "Other"}` });
+            return true;
+          }}
+        />
+
         <ProductDetail
           product={open}
           pinned={!!open && pins.isPinned(open.key)}
           onPin={() => open && pins.toggle(open)}
           onChooseBoards={() => open && pins.choose(open)}
+          onChangeCategory={demo ? undefined : () => setRecategorizing(open)}
           onClose={() => setOpen(null)}
         />
       </LayoutGroup>

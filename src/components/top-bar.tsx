@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/login/actions";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -8,6 +9,7 @@ export async function TopBar() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const email = data?.claims?.email as string | undefined;
+  const admin = await isAdmin(supabase, (data?.claims?.sub as string | undefined) ?? null);
 
   return (
     <header className="glass sticky top-0 z-40 border-b border-hairline">
@@ -15,7 +17,7 @@ export async function TopBar() {
         <Link href="/" className="text-lg font-semibold tracking-tight">
           G1A
         </Link>
-        <NavLinks signedIn={!!email} />
+        <NavLinks signedIn={!!email} admin={admin} />
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <ThemeToggle />
           {email ? (
