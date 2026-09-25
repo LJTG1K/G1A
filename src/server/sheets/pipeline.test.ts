@@ -159,6 +159,7 @@ describe("reference sheet end to end", () => {
 
   it("auto-maps FASHION with no user input", () => {
     expect(autoMap(fashion)).toEqual({
+      layout: "rows",
       headerRow: 0,
       name: 1,
       image: 2,
@@ -221,7 +222,7 @@ describe("autoMap on a sheet with no header labels", () => {
 
 describe("mappingSignature", () => {
   it("ignores custom-field order and label case", () => {
-    const base = { headerRow: 0, name: 1, link: 5, price: 4, image: 2 };
+    const base = { layout: "rows" as const, headerRow: 0, name: 1, link: 5, price: 4, image: 2 };
     const a = mappingSignature({ ...base, custom: [{ col: 3, label: "Fit" }, { col: 6, label: "Style" }] });
     const b = mappingSignature({ ...base, custom: [{ col: 6, label: "style" }, { col: 3, label: "fit " }] });
     expect(a).toBe(b);

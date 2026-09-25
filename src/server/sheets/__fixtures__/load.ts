@@ -6,3 +6,8 @@ import { gunzipSync } from "node:zlib";
 export function fixture(name: "fashion.html" | "tech.html" | "tech.csv" | "tabs.html"): string {
   return gunzipSync(readFileSync(join(__dirname, `reference-${name}.gz`))).toString("utf8");
 }
+
+/** First rows of the GillyREPS MEGA SHEET (1rfnDD0…) tabs, saved 2026-09-25: product blocks. */
+export function megaFixture(tab: "main" | "shoes"): string {
+  return gunzipSync(readFileSync(join(__dirname, `mega-${tab}.html.gz`))).toString("utf8");
+}

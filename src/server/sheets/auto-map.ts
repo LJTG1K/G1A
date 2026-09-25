@@ -1,4 +1,8 @@
-import type { Cell, Grid, Mapping } from "./types";
+import { detectBlocks } from "./blocks";
+import { cellImage, cellUrl, isNameText, isPriceText } from "./cells";
+import type { Grid, Mapping, RowMapping } from "./types";
+
+export { cellImage, cellUrl, isImageUrl } from "./cells";
 
 type Field = "name" | "link" | "price" | "image";
 
@@ -11,31 +15,7 @@ const HEADER_PATTERNS: Record<Field, RegExp[]> = {
 };
 const ANY_HEADER = Object.values(HEADER_PATTERNS).flat();
 
-const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif)(\?|$)/i;
-const IMAGE_HOST = /(^|\.)(ibb\.co|imgur\.com|alicdn\.com|googleusercontent\.com|yupoo\.com|geilicdn\.com|cloudinary\.com)$/i;
-const PRICE_LIKE = /^[^\d\n]{0,5}\d[\d,.]*(\s*[-–~]\s*[^\d\n]{0,3}\d[\d,.]*)?\s*[a-z¥$€£]{0,4}$/i;
-
-const isUrl = (s: string) => /^https?:\/\/\S+$/i.test(s);
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
-
-export function isImageUrl(s: string) {
-  if (!isUrl(s)) return false;
-  try {
-    const u = new URL(s);
-    return IMAGE_EXT.test(u.pathname) || IMAGE_HOST.test(u.hostname);
-  } catch {
-    return false;
-  }
-}
-
-/** Best URL a cell points to: its hyperlink, else its text when the text is a URL. */
-export const cellUrl = (c: Cell | undefined) => c?.href ?? (c && isUrl(c.text) ? c.text : undefined);
-export const cellImage = (c: Cell | undefined) => {
-  if (!c) return undefined;
-  if (c.img) return c.img;
-  const u = cellUrl(c);
-  return u && isImageUrl(u) ? u : undefined;
-};
 
 /** Header row = the row in the first 30 whose cells look most like field labels. */
 export function findHeaderRow(grid: Grid): number {
@@ -63,7 +43,7 @@ function profileColumns(grid: Grid, headerRow: number, width: number): ColumnPro
       p.filled++;
       if (cellImage(c)) p.image++;
       else if (cellUrl(c)) p.url++;
-      else if (PRICE_LIKE.test(c.text) && /[$¥€£]|^\d/.test(c.text)) p.price++;
+      else if (isPriceText(c.text)) p.price++;
       else if (/[a-z]{2}/i.test(c.text) && c.text.length <= 160) p.text++;
     }
     const n = Math.max(1, sample.length);
@@ -73,17 +53,14 @@ function profileColumns(grid: Grid, headerRow: number, width: number): ColumnPro
 
 const titleCase = (s: string) => s.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
 
-/**
- * Guesses a mapping: labels in the header row first, then what the column
- * contents look like. The user always confirms it in the mapping screen.
- */
-export function autoMap(grid: Grid): Mapping {
+/** One-product-per-row guess: header labels first, then what the columns contain. */
+export function autoMapRows(grid: Grid): RowMapping {
   const headerRow = findHeaderRow(grid);
   const width = Math.max(0, ...grid.slice(0, 200).map((r) => r.length));
   const headers = Array.from({ length: width }, (_, c) => (headerRow >= 0 ? norm(grid[headerRow][c]?.text ?? "") : ""));
   const profile = profileColumns(grid, headerRow, width);
   const used = new Set<number>();
-  const mapping: Mapping = { headerRow, name: null, link: null, price: null, image: null, custom: [] };
+  const mapping: RowMapping = { layout: "rows", headerRow, name: null, link: null, price: null, image: null, custom: [] };
 
   // 1. Header labels, most distinctive fields first.
   for (const field of ["image", "price", "link", "name"] as Field[]) {
@@ -126,4 +103,26 @@ export function autoMap(grid: Grid): Mapping {
   });
 
   return mapping;
+}
+
+/** Rows that would become products under a row mapping (for comparing layouts). */
+export function countRowProducts(grid: Grid, m: RowMapping): number {
+  if (m.name === null || m.link === null) return 0;
+  let n = 0;
+  for (let r = m.headerRow + 1; r < grid.length; r++) {
+    if (isNameText(grid[r][m.name]) && cellUrl(grid[r][m.link])) n++;
+  }
+  return n;
+}
+
+/**
+ * Guesses a mapping. Tries one-product-per-row and repeating product blocks, and
+ * picks blocks only when they find clearly more products. The user always
+ * confirms it in the mapping screen.
+ */
+export function autoMap(grid: Grid): Mapping {
+  const rows = autoMapRows(grid);
+  const blocks = detectBlocks(grid);
+  if (blocks && blocks.count > countRowProducts(grid, rows) * 1.2) return blocks.mapping;
+  return rows;
 }

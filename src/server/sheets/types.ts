@@ -12,8 +12,9 @@ export type Grid = Cell[][];
 
 export type Tab = { name: string; gid: string };
 
-/** Which column holds each field. `null` = not mapped. */
-export type Mapping = {
+/** One product per row: which column holds each field. `null` = not mapped. */
+export type RowMapping = {
+  layout: "rows";
   headerRow: number;
   name: number | null;
   link: number | null;
@@ -22,7 +23,25 @@ export type Mapping = {
   custom: { col: number; label: string }[];
 };
 
+/** Where a field sits relative to the product's name cell. */
+export type Offset = { dr: number; dc: number };
+
+/**
+ * Products laid out as repeating blocks of cells (e.g. 3 columns × 2 rows, two per
+ * row). Every cell whose surroundings match these offsets is a product.
+ */
+export type BlockMapping = {
+  layout: "blocks";
+  link: Offset | null;
+  price: Offset | null;
+  image: Offset | null;
+  custom: (Offset & { label: string })[];
+};
+
+export type Mapping = RowMapping | BlockMapping;
+
 export type NormalizedListing = {
+  /** Position in the sheet: the row for row layouts, row * 1000 + column for blocks. */
   rowIndex: number;
   itemKey: string;
   /** True when itemKey is a real marketplace ID, so it can merge across sheets. */

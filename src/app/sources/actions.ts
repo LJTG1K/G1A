@@ -112,8 +112,19 @@ export async function saveTab(sourceId: string, mapping: Mapping): Promise<Resul
     }
 
     const { grid } = await getGrid(admin, source);
-    const clean: Mapping = { ...mapping, custom: mapping.custom.map((c) => ({ ...c, label: c.label.trim() })) };
-    if (!isValidMapping(clean, grid)) return { ok: false, error: "Pick a column for Name and Purchase link." };
+    const clean: Mapping =
+      mapping.layout === "blocks"
+        ? { ...mapping, custom: mapping.custom.map((c) => ({ ...c, label: c.label.trim() })) }
+        : { ...mapping, custom: mapping.custom.map((c) => ({ ...c, label: c.label.trim() })) };
+    if (!isValidMapping(clean, grid)) {
+      return {
+        ok: false,
+        error:
+          clean.layout === "blocks"
+            ? "No products match that block. Pick the name and link cells of one product."
+            : "Pick a column for Name and Purchase link.",
+      };
+    }
 
     const { data: saved, error } = await supabase
       .from("mappings")

@@ -4,7 +4,7 @@ import { buildCategorizer, type Categorizer, type KeywordRule } from "./categori
 import { fetchGrid } from "./fetch-sheet";
 import { normalize } from "./normalize";
 import { mappingSignature } from "./signature";
-import type { Cell, Grid, Mapping } from "./types";
+import type { Cell, Grid, Mapping, Offset } from "./types";
 
 /** How long a fetched tab is reused before Google is asked again (shared by all users). */
 export const SNAPSHOT_TTL_MS = 10 * 60 * 1000;
@@ -113,15 +113,22 @@ export async function syncListings(
   return { signature, count: listings.length };
 }
 
-/** Converts between the app's Mapping and the DB's columns jsonb. */
-export const toColumns = (m: Mapping) => ({
-  name: m.name,
-  link: m.link,
-  price: m.price,
-  image: m.image,
-  custom: m.custom,
-});
-export const fromColumns = (headerRow: number, c: ReturnType<typeof toColumns>): Mapping => ({
-  headerRow,
-  ...c,
-});
+/** Mapping as stored in the DB's `columns` jsonb (header row lives in its own column). */
+export type StoredColumns =
+  | { layout?: "rows"; name: number | null; link: number | null; price: number | null; image: number | null; custom: { col: number; label: string }[] }
+  | { layout: "blocks"; link: Offset | null; price: Offset | null; image: Offset | null; custom: (Offset & { label: string })[] };
+
+/** Converts between the app's Mapping and the DB's columns jsonb + header_row. */
+export function toColumns(m: Mapping): StoredColumns {
+  if (m.layout === "blocks") return { layout: "blocks", link: m.link, price: m.price, image: m.image, custom: m.custom };
+  // Row mappings keep the original shape (no layout key) so existing rows and presets still match.
+  return { name: m.name, link: m.link, price: m.price, image: m.image, custom: m.custom };
+}
+
+export function fromColumns(headerRow: number, c: StoredColumns): Mapping {
+  if (c.layout === "blocks") return { layout: "blocks", link: c.link, price: c.price, image: c.image, custom: c.custom };
+  return { layout: "rows", headerRow, name: c.name, link: c.link, price: c.price, image: c.image, custom: c.custom };
+}
+
+/** header_row column value for a mapping (-1 for block layouts). */
+export const headerRowOf = (m: Mapping) => (m.layout === "rows" ? m.headerRow : -1);

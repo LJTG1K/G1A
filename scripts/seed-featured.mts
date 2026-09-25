@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { autoMap } from "../src/server/sheets/auto-map";
 import { fetchTabs } from "../src/server/sheets/fetch-sheet";
 import { mappingSignature } from "../src/server/sheets/signature";
-import { getGrid, loadCategorizer, syncListings, toColumns } from "../src/server/sheets/sync";
+import { getGrid, headerRowOf, loadCategorizer, syncListings, toColumns } from "../src/server/sheets/sync";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SECRET_KEY;
@@ -31,7 +31,7 @@ for (const source of sources ?? []) {
   const { error: presetError } = await db.from("mapping_presets").upsert({
     source_id: source.id,
     signature,
-    header_row: mapping.headerRow,
+    header_row: headerRowOf(mapping),
     columns: toColumns(mapping),
     approved: true,
     updated_at: new Date().toISOString(),

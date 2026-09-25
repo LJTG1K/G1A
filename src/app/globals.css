@@ -93,7 +93,14 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  transition: background-color 300ms ease, color 300ms ease;
+}
+
+/* Set for one frame while switching theme (see ThemeToggle). */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 /* ─── Surfaces ─────────────────────────────────────────────────────── */

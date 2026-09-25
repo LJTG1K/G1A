@@ -2,7 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { autoMap } from "./sheets/auto-map";
 import { mappingSignature } from "./sheets/signature";
-import { fromColumns, toColumns } from "./sheets/sync";
+import { findBlocks } from "./sheets/blocks";
+import { fromColumns, headerRowOf, toColumns } from "./sheets/sync";
 import type { Grid, Mapping } from "./sheets/types";
 
 /** A mapping becomes the shared default for a tab at this many matching users. */
@@ -10,7 +11,7 @@ export const PRESET_VOTES = 3;
 /** Most distinct spreadsheets one user can add (featured sheet not counted). */
 export const MAX_SHEETS_PER_USER = 20;
 /** Rows sent to the mapping screen for preview. */
-export const PREVIEW_ROWS = 60;
+export const PREVIEW_ROWS = 100;
 export const PREVIEW_COLS = 26;
 
 export type MappingOrigin = "yours" | "preset" | "auto";
@@ -59,6 +60,16 @@ export async function suggestMapping(
 }
 
 export function isValidMapping(m: Mapping, grid: Grid): boolean {
+  const labelsOk = m.custom.every((c) => c.label.trim().length > 0 && c.label.length <= 40);
+  if (m.layout === "blocks") {
+    // Offsets are small and distinct, and the layout must find at least one product.
+    const offsets = [{ dr: 0, dc: 0 }, m.link, m.price, m.image, ...m.custom].filter(
+      (o): o is { dr: number; dc: number } => !!o,
+    );
+    const small = offsets.every((o) => Number.isInteger(o.dr) && Number.isInteger(o.dc) && Math.abs(o.dr) <= 10 && Math.abs(o.dc) <= 10);
+    const distinct = new Set(offsets.map((o) => `${o.dr},${o.dc}`)).size === offsets.length;
+    return !!m.link && small && distinct && labelsOk && m.custom.length <= 10 && findBlocks(grid, m).length > 0;
+  }
   const width = Math.max(0, ...grid.slice(0, 500).map((r) => r.length));
   const cols = [m.name, m.link, m.price, m.image, ...m.custom.map((c) => c.col)].filter(
     (c): c is number => c !== null,
@@ -71,7 +82,7 @@ export function isValidMapping(m: Mapping, grid: Grid): boolean {
     m.headerRow < grid.length &&
     cols.every((c) => Number.isInteger(c) && c >= 0 && c < width) &&
     new Set(cols).size === cols.length &&
-    m.custom.every((c) => c.label.trim().length > 0 && c.label.length <= 40)
+    labelsOk
   );
 }
 
@@ -116,7 +127,7 @@ export async function recountVotes(admin: SupabaseClient, sourceId: string): Pro
 export function mappingRecord(sourceId: string, m: Mapping, userId: string) {
   return {
     source_id: sourceId,
-    header_row: m.headerRow,
+    header_row: headerRowOf(m),
     columns: toColumns(m),
     signature: mappingSignature(m),
     created_by: userId,

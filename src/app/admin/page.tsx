@@ -2,22 +2,33 @@ import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
 import { colLetter } from "@/lib/columns";
 import { createAdminClient } from "@/lib/supabase/server";
+import type { StoredColumns } from "@/server/sheets/sync";
+import type { Offset } from "@/server/sheets/types";
 import { PRESET_VOTES } from "@/server/sources";
 import { SHARED_TAG_VOTES } from "@/server/categories";
 import { AdminPanel, type PresetRow, type TagRow } from "./admin-panel";
 
 export const metadata: Metadata = { title: "Admin" };
 
-type Columns = {
-  name: number | null;
-  link: number | null;
-  price: number | null;
-  image: number | null;
-  custom: { col: number; label: string }[];
-};
+/** "right 1, down 2" for a block offset relative to the name cell. */
+const where = (o: Offset) =>
+  [o.dc && `${o.dc > 0 ? "right" : "left"} ${Math.abs(o.dc)}`, o.dr && `${o.dr > 0 ? "down" : "up"} ${Math.abs(o.dr)}`]
+    .filter(Boolean)
+    .join(", ") || "same cell";
 
-const describe = (headerRow: number, c: Columns) =>
-  [
+function describe(headerRow: number, c: StoredColumns): string {
+  if (c.layout === "blocks") {
+    return [
+      "Product blocks",
+      c.link && `Link ${where(c.link)}`,
+      c.image && `Image ${where(c.image)}`,
+      c.price && `Price ${where(c.price)}`,
+      ...c.custom.map((f) => `${f.label} ${where(f)}`),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  return [
     headerRow >= 0 ? `Header row ${headerRow + 1}` : "No header",
     c.name !== null && `Name ${colLetter(c.name)}`,
     c.link !== null && `Link ${colLetter(c.link)}`,
@@ -27,6 +38,7 @@ const describe = (headerRow: number, c: Columns) =>
   ]
     .filter(Boolean)
     .join(" · ");
+}
 
 export default async function AdminPage() {
   const { supabase } = await requireAdmin();
@@ -57,7 +69,7 @@ export default async function AdminPage() {
       tab: s?.tab_name ?? "?",
       sheet: s?.sheet_title ?? "Google Sheet",
       featured: !!s?.is_featured,
-      summary: describe(p.header_row, p.columns as Columns),
+      summary: describe(p.header_row, p.columns as StoredColumns),
       votes: p.votes,
       approved: p.approved,
     };
